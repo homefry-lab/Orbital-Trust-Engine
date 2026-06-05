@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DM — Sovereign Data & Grounded Truth Registry</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        obsidian: '#1A1A1B',
+                        slateDeep: '#2C3E50',
+                        medBlue: '#203CC9',
+                        acidLime: '#CCE07B'
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: #1A1A1B;
+        }
+        .matrix-grid {
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        .glow-divider {
+            background: linear-gradient(90deg, transparent, #203CC9, #CCE07B, transparent);
+            height: 1px;
+        }
+    </style>
+</head>
+<body class="text-gray-300 antialiased matrix-grid min-h-screen flex flex-col justify-between">
+
+    <!-- Sovereign Calibration Header -->
+    <div class="w-full bg-black/50 border-b border-white/5 py-3 px-6 text-[10px] tracking-widest text-gray-500 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-acidLime"></span>
+            <span>DATA REGIME: SOVEREIGN // GROUNDED TRUTH FILTER</span>
+        </div>
+        <div class="hidden md:block text-center">B-CORP COMPLIANCE MODEL FOR PHYSICAL ASSETS</div>
+        <div class="text-acidLime">SYS_CAL: #CCE07B</div>
+    </div>
+
+    <!-- Main Architecture -->
+    <main class="max-w-6xl mx-auto px-6 py-16 md:py-24 w-full flex-grow flex flex-col justify-center">
+        <div class="max-w-3xl space-y-8">
+            
+            <!-- System Label -->
+            <div class="inline-block text-xs text-acidLime border border-acidLime/30 px-3 py-1 uppercase tracking-widest bg-acidLime/5">
+                Protocol System // DM
+            </div>
+
+            <!-- Absolute Phrasing Headline -->
+            <h1 class="text-3xl md:text-5xl font-light tracking-tight text-white leading-tight">
+                Where paper records conflict with physics, <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-medBlue via-white to-acidLime font-normal">DM maps the discrepancy.</span>
+            </h1>
+
+            <!-- Grounded Truth Narrative -->
+            <p class="text-gray-400 text-sm md:text-base font-light leading-relaxed tracking-wide max-w-2xl">
+                Asset reputation shouldn't rely on self-reported administrative declarations. DM implements a localized, immutable truth filter—cross-verifying raw telemetry directly at the node level to neutralize unverified liabilities for operators and insurers.
+            </p>
+
+            <div class="w-full my-4 glow-divider"></div>
+
+            <!-- Front-End Secure Access Handshake (Email Form) -->
+            <div class="space-y-4 max-w-lg pt-4">
+                <div class="text-xs text-gray-400 uppercase tracking-widest flex items-center space-x-2">
+                    <span>[ Initiate Verification Handshake ]</span>
+                </div>
+                
+                <form class="p-1.5 bg-black/60 border border-white/10 rounded focus-within:border-acidLime/40 transition-all flex flex-col sm:flex-row gap-2" onsubmit="event.preventDefault();">
+                    <input 
+                        type="email" 
+                        required 
+                        placeholder="operator@protonmail.ch" 
+                        class="bg-transparent px-4 py-3 text-sm text-white placeholder-gray-700 focus:outline-none flex-grow tracking-wider font-light"
+                    >
+                    <button 
+                        type="submit" 
+                        class="bg-acidLime hover:bg-white text-black px-6 py-3 text-xs uppercase font-mono font-bold tracking-widest rounded transition-all active:scale-95 whitespace-nowrap"
+                    >
+                        Register Node
+                    </button>
+                </form>
+                
+                <p class="text-[10px] text-gray-600 leading-normal tracking-wide">
+                    Submission values are isolated to public key registries. Zero persistent cleartext tracking is retained on external web servers.
+                </p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Structural Footer -->
+    <footer class="w-full border-t border-white/5 bg-black/30 py-6 px-6 text-[10px] tracking-widest text-gray-600">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>&copy; 2026 DM CONTEXT REGISTRY. ALL RIGHTS RESERVED.</div>
+            <div class="flex items-center space-x-6">
+                <span>STRUCTURED B-CORP PERSISTENCE</span>
+                <span class="text-acidLime">//</span>
+                <span>INDEPENDENT VERIFICATION PLATFORM</span>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
