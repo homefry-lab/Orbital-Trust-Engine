@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Datum Major — Ethical data verification platform. Sovereign data. Grounded truth." />
+  <title>DATUM MAJOR — Sovereign Data. Grounded Truth.</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:wght@300;400;600;700&family=Inter:wght@300;400;500&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Design tokens ── */
+    :root {
+      --bg:        #F4F4F1;
+      --surface:   #EDEDEA;
+      --s2:        #E6E6E2;
+      --text:      #1A1A18;
+      --muted:     #8A8A7A;
+      --faint:     #B8B8AE;
+      --border:    #D4D4CE;
+      --sharp:     #BDBDB6;
+      --blue:      #5B84B1;
+      --blue-lt:   #7FA1C3;
+      --blue-pale: #EBF1F8;
+      --sage:      #6D6E5A;
+      --lime:      #cce07b;
+      --lime-dk:   #a8c247;
+      --tan:       #8B7355;
+      --tan-lt:    #A08560;
+
+      --font-brand:   'Cinzel', Georgia, serif;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-mono:    'DM Mono', monospace;
+      --font-ui:      'Inter', system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-weight: 300;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ── Orbital background ── */
+    #orbital-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .orb-node {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.88);
+      border: 1px solid rgba(91,132,177,0.09);
+      animation: orb-drift linear infinite;
+      will-change: transform, opacity;
+    }
+
+    @keyframes orb-drift {
+      0%   { transform: translate(0px,0px);               opacity: var(--op-start); }
+      30%  { transform: translate(var(--dx1),var(--dy1)); opacity: var(--op-mid);   }
+      60%  { transform: translate(var(--dx2),var(--dy2)); opacity: var(--op-start); }
+      100% { transform: translate(0px,0px);               opacity: var(--op-mid);   }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .orb-node { animation: none; }
+    }
+
+    header, main, footer { position: relative; z-index: 1; }
+
+    /* ════════════════════════════════
+       HEADER
+    ════════════════════════════════ */
+    #site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.1rem 3rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(244,244,241,0.93);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    /* Brand */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: var(--font-brand);
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.28em;
+      color: var(--text);
+      text-transform: uppercase;
+      user-select: none;
+    }
+
+    /* Logo slot — swap this block for <img> when ready */
+    .brand-logo-slot {
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--sage);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      opacity: 0.55;
+    }
+
+    /* Access Portal — green gradient, click-only tooltip */
+    .portal-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.48rem 1.1rem;
+      background: linear-gradient(135deg, var(--lime) 0%, #a8c960 55%, #8aaa40 100%);
+      border: 1px solid var(--lime-dk);
+      color: #2a2e1a;
+      font-family: var(--font-mono);
+      font-size: 0.63rem;
+      font-weight: 500;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      cursor: pointer;
+      user-select: none;
+      box-shadow:
+        inset 0  1px 0 rgba(255,255,255,0.55),
+        inset 0 -1px 0 rgba(0,0,0,0.12),
+        0 1px 3px rgba(0,0,0,0.10);
+      transition: opacity 0.18s;
+    }
+
+    .portal-btn::before {
+      content: '';
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: rgba(42,46,26,0.4);
+      flex-shrink: 0;
+    }
+
+    .portal-btn:hover { opacity: 0.88; }
+
+    /* Tooltip — click-triggered, JS-controlled */
+    .portal-tip {
+      position: absolute;
+      top: calc(100% + 9px);
+      right: 0;
+      white-space: nowrap;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.09em;
+      padding: 0.38rem 0.7rem;
+      pointer-events: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      /* Hidden by default — JS toggles .tip-visible */
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .portal-tip::before {
+      content: '';
+      position: absolute;
+      bottom: 100%; right: 14px;
+      border: 5px solid transparent;
+      border-bottom-color: var(--border);
+    }
+
+    .portal-tip.tip-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ════════════════════════════════
+       HERO — all centered
+    ════════════════════════════════ */
+    #hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100svh - 64px);
+      padding: 4rem 1.5rem 3rem;
+      text-align: center;
+    }
+
+    .hero-inner {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Eyebrow */
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.7rem;
+      font-family: var(--font-mono);
+      font-variant: small-caps;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      color: var(--blue);
+      margin-bottom: 2rem;
+    }
+
+    .eyebrow-rule {
+      display: inline-block;
+      width: 22px;
+      height: 1px;
+      background: var(--blue-lt);
+      opacity: 0.5;
+      flex-shrink: 0;
+    }
+
+    /* Headline */
+    .headline {
+      font-family: var(--font-display);
+      font-style: normal;
+      line-height: 1.08;
+      margin-bottom: 1.9rem;
+      text-align: center;
+      width: 100%;
+    }
+
+    /* SOVEREIGN DATA — bold, dominant */
+    .hl-line1 {
+      display: block;
+      font-size: clamp(2.6rem, 6.2vw, 4.8rem);
+      font-weight: 700;
+      font-style: normal;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-shadow:
+        -0.5px -0.5px 0   rgba(255,255,255,0.95),
+         0.5px  0.5px 1px rgba(26,26,24,0.12);
+    }
+
+    /* GROUNDED TRUTH — engraved bevel, blue */
+    .hl-line2 {
+      display: block;
+      font-size: clamp(2.2rem, 5.4vw, 4.1rem);
+      font-weight: 300;
+      font-style: normal;
+      color: var(--blue);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      text-shadow:
+        -1px  -1px  0    rgba(255,255,255,0.98),
+         1px   1px  2px  rgba(32,58,90,0.28),
+         0     0    6px  rgba(91,132,177,0.14),
+         0     2px  4px  rgba(91,132,177,0.08);
+    }
+
+    /* ── Subtitle: bracketed, centered ── */
+    .subline-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 2.75rem;
+      width: 100%;
+      max-width: 540px;
+    }
+
+    /* Top bracket row */
+    .subline-bracket {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+    }
+
+    .bracket-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--blue-lt), transparent);
+      opacity: 0.4;
+      max-width: 60px;
+    }
+
+    .bracket-dash {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--blue-lt);
+      opacity: 0.6;
+      letter-spacing: 0.05em;
+    }
+
+    /* Text body */
+    .subline-text {
+      font-family: var(--font-ui);
+      font-size: clamp(0.84rem, 1.5vw, 0.97rem);
+      font-weight: 300;
+      line-height: 1.9;
+      color: var(--muted);
+      text-align: center;
+      padding: 0.6rem 1rem;
+    }
+
+    /* Hairline */
+    .h-rule {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 2rem;
+      max-width: 680px;
+    }
+
+    /* ════════════════════════════════
+       CTA — shadow box, ice blue, centered
+    ════════════════════════════════ */
+    #access-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      padding: 0 1.5rem 5rem;
+    }
+
+    #cta-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      padding: 0.8rem 2rem;
+      font-family: var(--font-brand);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: #1e3a5a;
+      background: linear-gradient(135deg, var(--blue-pale) 0%, #d6e8f7 60%, #c8dff4 100%);
+      border: 1px solid #b0cde8;
+      box-shadow:
+        inset 0  1px 0 rgba(255,255,255,0.85),
+        inset 0 -1px 0 rgba(0,0,0,0.06),
+        0  4px 12px    rgba(91,132,177,0.2),
+        0  1px  3px    rgba(91,132,177,0.12);
+      transition: box-shadow 0.22s ease, background 0.22s ease, transform 0.15s ease;
+    }
+
+    .cta-arrow {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-right: 1.5px solid #1e3a5a;
+      border-bottom: 1.5px solid #1e3a5a;
+      transform: rotate(45deg) translateY(-2px);
+      opacity: 0.7;
+      transition: transform 0.22s;
+    }
+
+    #cta-btn[aria-expanded="true"] .cta-arrow {
+      transform: rotate(-135deg) translateY(-2px);
+    }
+
+    #cta-btn:hover {
+      background: linear-gradient(135deg, #d6e8f7 0%, #c2daef 60%, #b0ccec 100%);
+      box-shadow:
+        inset 0  1px 0 rgba(255,255,255,0.9),
+        inset 0 -1px 0 rgba(0,0,0,0.07),
+        0  6px 18px    rgba(91,132,177,0.26),
+        0  2px  5px    rgba(91,132,177,0.14);
+      transform: translateY(-1px);
+    }
+
+    #cta-btn:active { transform: translateY(0); }
+    #cta-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+
+    /* ── Form reveal ── */
+    #form-wrap {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      width: 100%;
+      max-width: 580px;
+      transition: max-height 0.46s ease, opacity 0.32s ease, margin-top 0.3s ease;
+      margin-top: 0;
+    }
+
+    #form-wrap.open {
+      max-height: 700px;
+      opacity: 1;
+      margin-top: 1.75rem;
+    }
+
+    #dm-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 2rem 2.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.3rem;
+      box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.75),
+        0 2px 8px rgba(0,0,0,0.05);
+      text-align: left;
+    }
+
+    .form-hed {
+      font-family: var(--font-mono);
+      font-variant: small-caps;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      color: var(--blue);
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field { display: flex; flex-direction: column; gap: 0.4rem; }
+
+    .field label {
+      font-family: var(--font-mono);
+      font-variant: small-caps;
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+
+    .field input,
+    .field select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 1rem;
+      font-weight: 300;
+      padding: 0.65rem 0.85rem;
+      outline: none;
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      border-radius: 0;
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,0.6);
+      transition: border-color 0.18s;
+    }
+
+    .field input::placeholder { color: var(--tan-lt); font-size: 0.95rem; }
+    .field input:focus,
+    .field select:focus { border-color: var(--blue); }
+
+    .field select.unset { color: var(--tan-lt); }
+    .field select option { color: var(--text); }
+
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 0.85rem; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 0.7rem;
+      pointer-events: none;
+    }
+
+    /* Submit — Cinzel, green gradient on hover/active */
+    .form-submit {
+      padding: 0.72rem 1.25rem;
+      background: transparent;
+      border: 1px solid var(--sage);
+      color: var(--sage);
+      font-family: var(--font-brand);
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      width: 100%;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.65),
+        0 1px 3px rgba(0,0,0,0.05);
+      transition: background 0.25s ease, border-color 0.25s ease,
+                  color 0.2s ease, box-shadow 0.25s ease, transform 0.15s ease;
+    }
+
+    .form-submit:hover,
+    .form-submit:focus-visible {
+      background: linear-gradient(135deg, var(--lime) 0%, #a8c960 55%, #8aaa40 100%);
+      border-color: var(--lime-dk);
+      color: #2a2e1a;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.5),
+        0 3px 10px rgba(168,201,96,0.3);
+      transform: translateY(-1px);
+    }
+
+    .form-submit:active {
+      background: linear-gradient(135deg, #a8c960 0%, #8aaa40 100%);
+      transform: translateY(0);
+    }
+
+    .form-submit:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+    .form-note {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      color: var(--faint);
+      text-align: center;
+    }
+
+    /* ════════════════════════════════
+       FOOTER
+    ════════════════════════════════ */
+    #site-footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 1.1rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(244,244,241,0.85);
+    }
+
+    #site-footer span {
+      font-family: var(--font-brand);
+      font-size: 0.6rem;
+      font-weight: 400;
+      letter-spacing: 0.22em;
+      color: var(--faint);
+      text-transform: uppercase;
+    }
+
+    /* ════════════════════════════════
+       RESPONSIVE — mobile first
+    ════════════════════════════════ */
+    @media (max-width: 768px) {
+      #site-header  { padding: 1rem 1.5rem; }
+      #hero         { padding: 3rem 1.25rem 2.5rem; min-height: auto; padding-top: 4rem; }
+      #access-section { padding: 0 1.25rem 4rem; }
+      #dm-form      { padding: 1.5rem 1.25rem; }
+      #site-footer  { padding: 1rem 1.25rem; }
+      .hl-line1     { font-size: clamp(2rem, 8vw, 3rem); }
+      .hl-line2     { font-size: clamp(1.7rem, 7vw, 2.6rem); }
+      #cta-btn      { width: 100%; max-width: 340px; }
+    }
+
+    @media (max-width: 480px) {
+      .brand        { font-size: 0.68rem; letter-spacing: 0.18em; }
+      .portal-btn   { font-size: 0.55rem; padding: 0.42rem 0.75rem; }
+      .hl-line1     { font-size: clamp(1.8rem, 9vw, 2.4rem); }
+      .hl-line2     { font-size: clamp(1.5rem, 8vw, 2rem); }
+      .subline-text { font-size: 0.88rem; }
+    }
+
+    /* ── GitHub Pages / Google Sites embed safety ──
+       When embedded in Sites via iframe, the outer Sites
+       header/nav remains. This page's own header is correct
+       to keep for standalone GitHub Pages hosting.
+       If Sites strips it via sandbox, it degrades cleanly. */
+    @media (max-height: 500px) {
+      #site-header { position: relative; }
+      #hero { min-height: auto; padding: 2rem 1.25rem; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="orbital-bg" aria-hidden="true"></div>
+
+  <!-- ══════════════ HEADER ══════════════ -->
+  <header id="site-header">
+
+    <div class="brand">
+      <!--
+        ╔═══════════════════════════════════╗
+        ║  LOGO SLOT — replace this block   ║
+        ║  with your logo once ready:       ║
+        ║  <img src="logo.svg"              ║
+        ║       alt="Datum Major"           ║
+        ║       width="28" height="28" />   ║
+        ╚═══════════════════════════════════╝
+      -->
+      <div class="brand-logo-slot" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="6" stroke="#6D6E5A" stroke-width="1"/>
+          <circle cx="7" cy="7" r="2.5" fill="#cce07b" opacity="0.65"/>
+        </svg>
+      </div>
+      DATUM MAJOR
+    </div>
+
+    <!-- Click-only tooltip — no hover reveal -->
+    <button class="portal-btn" id="portal-btn" type="button"
+      aria-label="Access Portal" aria-expanded="false">
+      Access Portal
+      <span class="portal-tip" id="portal-tip" role="tooltip">
+        Sovereign Port Access Restricted.
+      </span>
+    </button>
+
+  </header>
+
+
+  <!-- ══════════════ HERO ══════════════ -->
+  <main>
+    <section id="hero">
+      <div class="hero-inner">
+
+        <!-- Eyebrow subcaps -->
+        <p class="eyebrow">
+          <span class="eyebrow-rule"></span>
+          Ethical Data Infrastructure
+          <span class="eyebrow-rule"></span>
+        </p>
+
+        <!-- Headline — all caps, no italics, centered -->
+        <h1 class="headline">
+          <span class="hl-line1">Sovereign Data.</span>
+          <span class="hl-line2">Grounded Truth.</span>
+        </h1>
+
+        <!-- Subtitle — bracketed above and below, centered -->
+        <div class="subline-wrap">
+          <!-- Top bracket -->
+          <div class="subline-bracket">
+            <span class="bracket-line"></span>
+            <span class="bracket-dash">&#x2012;</span>
+            <span class="bracket-line"></span>
+          </div>
+
+          <!-- Text -->
+          <p class="subline-text">
+            Map your verification. We bridge the gap between<br />
+            raw telemetry and undisputed integrity.
+          </p>
+
+          <!-- Bottom bracket -->
+          <div class="subline-bracket">
+            <span class="bracket-line"></span>
+            <span class="bracket-dash">&#x2012;</span>
+            <span class="bracket-line"></span>
+          </div>
+        </div>
+
+        <div class="h-rule"></div>
+
+      </div>
+    </section>
+
+    <!-- ══════════════ CTA + FORM ══════════════ -->
+    <section id="access-section">
+
+      <button id="cta-btn" type="button"
+        aria-expanded="false" aria-controls="form-wrap">
+        Request Early Access
+        <span class="cta-arrow"></span>
+      </button>
+
+      <div id="form-wrap" aria-hidden="true">
+        <form id="dm-form"
+          action="https://docs.google.com/forms/d/e/1FAIpQLSdN7y7dkCBJBpFIqJ-Xi4SSBqFBfqodq4F8/formResponse"
+          method="POST"
+          target="_blank">
+
+          <p class="form-hed">Early Access Registration — Controlled Release</p>
+
+          <div class="field">
+            <label for="f-name">Full Name</label>
+            <input type="text" id="f-name" name="entry.fullname"
+              placeholder="Enter your full name"
+              required autocomplete="name" />
+          </div>
+
+          <div class="field">
+            <label for="f-email">Email Address</label>
+            <input type="email" id="f-email" name="entry.email"
+              placeholder="Enter professional email address"
+              required autocomplete="email" />
+          </div>
+
+          <div class="field">
+            <label for="f-role">Organization / Role</label>
+            <div class="select-wrap">
+              <select id="f-role" name="entry.role" class="unset" required
+                onchange="this.classList.remove('unset')">
+                <option value="" disabled selected>Select your designation</option>
+                <option value="Asset Operator">Asset Operator</option>
+                <option value="Insurer">Insurer</option>
+                <option value="Developer">Developer</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="form-submit">Submit Registration</button>
+
+          <p class="form-note">&#x1F512;&ensp;Encrypted</p>
+
+        </form>
+      </div>
+    </section>
+  </main>
+
+
+  <!-- ══════════════ FOOTER ══════════════ -->
+  <footer id="site-footer">
+    <span>Est. 2026</span>
+  </footer>
+
+
+  <!-- ══════════════ SCRIPTS ══════════════ -->
+  <script>
+    /* ── Orbital nodes ── */
+    (function () {
+      var canvas = document.getElementById('orbital-bg');
+      for (var i = 0; i < 26; i++) {
+        var n   = document.createElement('span');
+        n.className = 'orb-node';
+        var sz  = (4 + Math.random() * 20).toFixed(1);
+        var dx1 = ((Math.random() - 0.5) * 170).toFixed(1) + 'px';
+        var dy1 = ((Math.random() - 0.5) * 110).toFixed(1) + 'px';
+        var dx2 = ((Math.random() - 0.5) * 130).toFixed(1) + 'px';
+        var dy2 = ((Math.random() - 0.5) *  90).toFixed(1) + 'px';
+        n.style.cssText = [
+          'width:'  + sz + 'px',
+          'height:' + sz + 'px',
+          'left:'   + (Math.random() * 100).toFixed(2) + '%',
+          'top:'    + (Math.random() * 100).toFixed(2) + '%',
+          '--dx1:'  + dx1, '--dy1:' + dy1,
+          '--dx2:'  + dx2, '--dy2:' + dy2,
+          '--op-start:' + (0.05 + Math.random() * 0.12).toFixed(3),
+          '--op-mid:'   + (0.12 + Math.random() * 0.14).toFixed(3),
+          'animation-duration:' + (18 + Math.random() * 30).toFixed(1) + 's',
+          'animation-delay:-'   + (Math.random() * 48).toFixed(1) + 's'
+        ].join(';');
+        canvas.appendChild(n);
+      }
+    })();
+
+    /* ── CTA form toggle ── */
+    (function () {
+      var btn  = document.getElementById('cta-btn');
+      var wrap = document.getElementById('form-wrap');
+      if (!btn || !wrap) return;
+      btn.addEventListener('click', function () {
+        var open = wrap.classList.toggle('open');
+        btn.setAttribute('aria-expanded',  open ? 'true' : 'false');
+        wrap.setAttribute('aria-hidden',   open ? 'false' : 'true');
+        if (open) setTimeout(function () {
+          wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 80);
+      });
+    })();
+
+    /* ── Portal tooltip — click only, dismiss on outside click ── */
+    (function () {
+      var btn = document.getElementById('portal-btn');
+      var tip = document.getElementById('portal-tip');
+      if (!btn || !tip) return;
+
+      var open = false;
+
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        open = !open;
+        tip.classList.toggle('tip-visible', open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+
+      /* Click anywhere else dismisses it */
+      document.addEventListener('click', function () {
+        if (open) {
+          open = false;
+          tip.classList.remove('tip-visible');
+          btn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    })();
+  </script>
+
+</body>
+</html>
