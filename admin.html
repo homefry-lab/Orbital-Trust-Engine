@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orbital Lens — Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:wght@300;400;600&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --bg:#F4F4F1;--surface:#EDEDEA;--s2:#E6E6E2;
+      --text:#1A1A18;--muted:#8A8A7A;--faint:#B8B8AE;--border:#D4D4CE;
+      --blue:#5B84B1;--blue-lt:#7FA1C3;--sage:#6D6E5A;--lime:#cce07b;--lime-dk:#a8c247;
+      --warn:#8B4A2A;--warn-bg:#F9F0EB;
+      --font-brand:'Cinzel',serif;--font-display:'Cormorant Garamond',serif;
+      --font-mono:'DM Mono',monospace;--font-ui:'Inter',sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html{font-size:16px;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-ui);
+      font-weight:300;-webkit-font-smoothing:antialiased;min-height:100vh;
+      display:flex;flex-direction:column;}
+    #orbital-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+    .orb-node{position:absolute;border-radius:50%;background:rgba(255,255,255,0.88);
+      border:1px solid rgba(91,132,177,0.08);animation:orb-drift linear infinite;}
+    @keyframes orb-drift{
+      0%{transform:translate(0,0);opacity:var(--os);}
+      40%{transform:translate(var(--dx1),var(--dy1));opacity:var(--om);}
+      70%{transform:translate(var(--dx2),var(--dy2));opacity:var(--os);}
+      100%{transform:translate(0,0);opacity:var(--om);}
+    }
+    @media(prefers-reduced-motion:reduce){.orb-node{animation:none;}}
+    header,main,footer{position:relative;z-index:1;}
+
+    #site-header{display:flex;align-items:center;justify-content:space-between;
+      padding:1rem 2.5rem;border-bottom:1px solid var(--border);
+      background:rgba(244,244,241,0.93);backdrop-filter:blur(12px);
+      position:sticky;top:0;z-index:100;}
+    .brand{display:flex;align-items:center;gap:0.65rem;font-family:var(--font-brand);
+      font-size:0.78rem;font-weight:500;letter-spacing:0.26em;text-transform:uppercase;color:var(--text);}
+    .brand-pip{width:7px;height:7px;background:var(--lime);border:1px solid var(--sage);flex-shrink:0;}
+    .admin-badge{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.14em;
+      color:var(--warn);background:var(--warn-bg);border:1px solid rgba(139,74,42,0.2);
+      padding:0.2rem 0.55rem;font-variant:small-caps;text-transform:uppercase;}
+    .nav-right{display:flex;align-items:center;gap:1rem;}
+    .user-tag{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;
+      color:var(--muted);font-variant:small-caps;}
+    .signout-btn{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.12em;
+      color:var(--faint);background:none;border:1px solid var(--border);
+      padding:0.3rem 0.65rem;cursor:pointer;text-transform:uppercase;
+      transition:border-color 0.2s,color 0.2s;}
+    .signout-btn:hover{border-color:var(--sage);color:var(--sage);}
+
+    main{flex:1;max-width:960px;width:100%;margin:0 auto;padding:3rem 1.5rem 4rem;}
+
+    .page-eyebrow{display:flex;align-items:center;gap:0.6rem;font-family:var(--font-mono);
+      font-variant:small-caps;font-size:0.68rem;letter-spacing:0.2em;color:var(--warn);margin-bottom:1rem;}
+    .eyebrow-rule{display:inline-block;width:18px;height:1px;background:currentColor;opacity:0.4;}
+    .page-title{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.8rem);
+      font-weight:300;text-transform:uppercase;letter-spacing:0.05em;color:var(--text);
+      margin-bottom:0.35rem;
+      text-shadow:-0.5px -0.5px 0 rgba(255,255,255,0.95),0.5px 0.5px 1px rgba(26,26,24,0.1);}
+    .page-sub{font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.14em;
+      color:var(--faint);margin-bottom:2.5rem;font-variant:small-caps;}
+
+    .section-label{font-family:var(--font-mono);font-variant:small-caps;
+      font-size:0.63rem;letter-spacing:0.18em;color:var(--blue);
+      margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;}
+    .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+    /* Stat grid */
+    .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+      background:var(--border);border:1px solid var(--border);margin-bottom:2rem;}
+    .stat-card{background:var(--surface);padding:1.25rem 1.4rem;
+      box-shadow:inset 1px 1px 0 rgba(255,255,255,0.7);}
+    .stat-val{font-family:var(--font-display);font-size:2rem;font-weight:300;
+      color:var(--text);line-height:1;margin-bottom:0.3rem;}
+    .stat-val .unit{font-size:0.9rem;color:var(--sage);}
+    .stat-key{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.16em;
+      color:var(--faint);text-transform:uppercase;}
+
+    /* User table */
+    .table-wrap{border:1px solid var(--border);background:var(--surface);
+      box-shadow:inset 1px 1px 0 rgba(255,255,255,0.7);margin-bottom:2rem;overflow:hidden;}
+    .table-head{display:grid;grid-template-columns:2.5fr 1fr 1fr 1fr;gap:0.5rem;
+      padding:0.55rem 1.25rem;border-bottom:1px solid var(--border);}
+    .table-col{font-family:var(--font-mono);font-size:0.57rem;
+      letter-spacing:0.15em;color:var(--faint);text-transform:uppercase;}
+    .table-row{display:grid;grid-template-columns:2.5fr 1fr 1fr 1fr;gap:0.5rem;
+      padding:0.85rem 1.25rem;border-bottom:1px solid rgba(212,212,206,0.4);
+      align-items:center;transition:background 0.15s;}
+    .table-row:last-child{border-bottom:none;}
+    .table-row:hover{background:rgba(255,255,255,0.45);}
+    .user-email{font-family:var(--font-ui);font-size:0.82rem;color:var(--text);}
+    .role-badge{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.1em;
+      text-transform:uppercase;padding:0.18rem 0.5rem;display:inline-block;}
+    .role-admin{color:var(--warn);background:var(--warn-bg);border:1px solid rgba(139,74,42,0.2);}
+    .role-user{color:var(--sage);background:#F4F7F0;border:1px solid rgba(109,110,90,0.2);}
+    .status-active{font-family:var(--font-mono);font-size:0.6rem;color:var(--sage);}
+    .status-inactive{font-family:var(--font-mono);font-size:0.6rem;color:var(--faint);}
+    .action-btn{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.1em;
+      padding:0.22rem 0.55rem;background:none;border:1px solid var(--border);
+      cursor:pointer;color:var(--muted);text-transform:uppercase;
+      transition:border-color 0.18s,color 0.18s;}
+    .action-btn:hover{border-color:var(--blue);color:var(--blue);}
+    .action-btn.revoke:hover{border-color:#a04040;color:#a04040;}
+
+    /* Audit log */
+    .log-wrap{border:1px solid var(--border);background:var(--surface);
+      box-shadow:inset 1px 1px 0 rgba(255,255,255,0.7);}
+    .log-row{display:flex;justify-content:space-between;align-items:baseline;
+      padding:0.65rem 1.25rem;border-bottom:1px solid rgba(212,212,206,0.4);}
+    .log-row:last-child{border-bottom:none;}
+    .log-event{font-family:var(--font-ui);font-size:0.8rem;color:var(--text);}
+    .log-meta{font-family:var(--font-mono);font-size:0.58rem;color:var(--faint);}
+
+    /* Alert banner */
+    .alert-banner{display:flex;align-items:center;gap:0.75rem;
+      background:var(--warn-bg);border:1px solid rgba(139,74,42,0.25);
+      padding:0.75rem 1.25rem;margin-bottom:2rem;
+      font-family:var(--font-mono);font-size:0.63rem;letter-spacing:0.1em;color:var(--warn);}
+
+    footer{position:relative;z-index:1;border-top:1px solid var(--border);
+      padding:1rem 2.5rem;display:flex;align-items:center;justify-content:center;
+      background:rgba(244,244,241,0.85);}
+    footer span{font-family:var(--font-brand);font-size:0.58rem;
+      letter-spacing:0.2em;color:var(--faint);text-transform:uppercase;}
+
+    @media(max-width:720px){
+      #site-header{padding:1rem 1.25rem;}
+      main{padding:2rem 1rem 3rem;}
+      .stat-grid{grid-template-columns:1fr 1fr;}
+      .table-head,.table-row{grid-template-columns:1fr 1fr;}
+      .table-head .col-status,.table-row .cell-status,
+      .table-head .col-action,.table-row .cell-action{display:none;}
+      footer{padding:1rem 1.25rem;}
+    }
+  </style>
+</head>
+<body>
+  <div id="orbital-bg" aria-hidden="true"></div>
+
+  <header id="site-header">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="brand"><span class="brand-pip"></span>Datum Major</div>
+      <span class="admin-badge">Admin</span>
+    </div>
+    <div class="nav-right">
+      <span class="user-tag" id="admin-email-display">—</span>
+      <button class="signout-btn" onclick="handleSignOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <main>
+    <p class="page-eyebrow"><span class="eyebrow-rule"></span>Orbital Lens · Admin Control</p>
+    <h1 class="page-title">Command Overview</h1>
+    <p class="page-sub">Full read and write access · Audit layer active</p>
+
+    <!-- Alert -->
+    <div class="alert-banner">
+      &#9888;&ensp;Admin session active. All actions are logged and audited.
+    </div>
+
+    <!-- Stats -->
+    <p class="section-label">Platform Overview</p>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-val" id="total-users">—<span class="unit"></span></div>
+        <div class="stat-key">Total Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">3<span class="unit"></span></div>
+        <div class="stat-key">Assets Tracked</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">99<span class="unit">%</span></div>
+        <div class="stat-key">Avg Rep. Score</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="active-sessions">—<span class="unit"></span></div>
+        <div class="stat-key">Active Sessions</div>
+      </div>
+    </div>
+
+    <!-- User table -->
+    <p class="section-label">User Registry</p>
+    <div class="table-wrap">
+      <div class="table-head">
+        <span class="table-col">Email / Identity</span>
+        <span class="table-col">Role</span>
+        <span class="table-col col-status">Status</span>
+        <span class="table-col col-action">Action</span>
+      </div>
+      <div id="user-table-body">
+        <!-- Rows injected by JS from Supabase -->
+        <div class="table-row">
+          <span class="user-email" style="color:var(--faint);font-size:0.75rem;">Loading user registry...</span>
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit log -->
+    <p class="section-label">Audit Log · Session</p>
+    <div class="log-wrap" id="audit-log">
+      <div class="log-row">
+        <span class="log-event">Admin session initiated · Orbital Lens</span>
+        <span class="log-meta" id="audit-t1">—</span>
+      </div>
+      <div class="log-row">
+        <span class="log-event">Admin identity verified · Auth layer</span>
+        <span class="log-meta" id="audit-t2">—</span>
+      </div>
+      <div class="log-row">
+        <span class="log-event">User registry loaded</span>
+        <span class="log-meta" id="audit-t3">—</span>
+      </div>
+    </div>
+  </main>
+
+  <footer><span>Datum Major · Orbital Lens v1.0 · Admin · Est. 2026</span></footer>
+
+  <script>
+    const SUPABASE_URL  = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY';
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    function fmt(d){ return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+
+    (async function() {
+      /* Auth gate */
+      const { data:{ session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = '../login.html'; return; }
+
+      /* Role gate — must be admin */
+      const { data: profile } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
+      if (!profile || profile.role !== 'admin') { window.location.href = './index.html'; return; }
+
+      document.getElementById('admin-email-display').textContent = session.user.email;
+
+      /* Timestamps */
+      const now = new Date();
+      document.getElementById('audit-t1').textContent = fmt(now);
+      document.getElementById('audit-t2').textContent = fmt(new Date(now-900));
+      document.getElementById('audit-t3').textContent = fmt(new Date(now-1800));
+
+      /* Load users from profiles table */
+      const { data: users, error } = await sb.from('profiles').select('id, email, role, created_at');
+
+      if (error || !users) {
+        document.getElementById('user-table-body').innerHTML =
+          '<div class="table-row"><span class="user-email" style="color:var(--faint);font-size:0.75rem;">Could not load users. Check Supabase RLS policies.</span><span></span><span></span><span></span></div>';
+        return;
+      }
+
+      document.getElementById('total-users').innerHTML = users.length + '<span class="unit"></span>';
+      document.getElementById('active-sessions').innerHTML = '1<span class="unit"></span>';
+
+      const tbody = document.getElementById('user-table-body');
+      tbody.innerHTML = '';
+      users.forEach(u => {
+        const row = document.createElement('div');
+        row.className = 'table-row';
+        const isAdmin = u.role === 'admin';
+        row.innerHTML = `
+          <span class="user-email">${u.email || u.id}</span>
+          <span><span class="role-badge ${isAdmin ? 'role-admin':'role-user'}">${u.role || 'user'}</span></span>
+          <span class="status-active cell-status">Active</span>
+          <span class="cell-action">
+            ${!isAdmin ? `<button class="action-btn revoke" onclick="revokeUser('${u.id}')">Revoke</button>` : '<span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--faint);">Protected</span>'}
+          </span>`;
+        tbody.appendChild(row);
+      });
+    })();
+
+    async function revokeUser(userId) {
+      if (!confirm('Revoke access for this user?')) return;
+      const { error } = await sb.from('profiles').update({ role: 'revoked' }).eq('id', userId);
+      if (error) { alert('Could not revoke user. Check permissions.'); return; }
+      window.location.reload();
+    }
+
+    async function handleSignOut() {
+      await sb.auth.signOut();
+      window.location.href = '../login.html';
+    }
+
+    /* Orbital bg */
+    (function(){
+      var c=document.getElementById('orbital-bg');
+      for(var i=0;i<22;i++){
+        var n=document.createElement('span'); n.className='orb-node';
+        var sz=(4+Math.random()*18).toFixed(1);
+        n.style.cssText=['width:'+sz+'px','height:'+sz+'px',
+          'left:'+(Math.random()*100).toFixed(2)+'%','top:'+(Math.random()*100).toFixed(2)+'%',
+          '--dx1:'+((Math.random()-.5)*160).toFixed(1)+'px',
+          '--dy1:'+((Math.random()-.5)*100).toFixed(1)+'px',
+          '--dx2:'+((Math.random()-.5)*120).toFixed(1)+'px',
+          '--dy2:'+((Math.random()-.5)*80).toFixed(1)+'px',
+          '--os:'+(0.05+Math.random()*0.12).toFixed(3),
+          '--om:'+(0.12+Math.random()*0.14).toFixed(3),
+          'animation-duration:'+(18+Math.random()*30).toFixed(1)+'s',
+          'animation-delay:-'+(Math.random()*48).toFixed(1)+'s'
+        ].join(';'); c.appendChild(n);
+      }
+    })();
+  </script>
+</body>
+</html>

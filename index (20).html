@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orbital Lens — My Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:wght@300;400;600&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:      #F4F4F1; --surface: #EDEDEA; --s2: #E6E6E2;
+      --text:    #1A1A18; --muted: #8A8A7A; --faint: #B8B8AE;
+      --border:  #D4D4CE; --blue: #5B84B1; --blue-lt: #7FA1C3;
+      --blue-pale: #EBF1F8; --sage: #6D6E5A; --lime: #cce07b;
+      --lime-dk: #a8c247;
+      --font-brand: 'Cinzel',serif; --font-display:'Cormorant Garamond',serif;
+      --font-mono:'DM Mono',monospace; --font-ui:'Inter',sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html{font-size:16px;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-ui);
+      font-weight:300;-webkit-font-smoothing:antialiased;min-height:100vh;
+      display:flex;flex-direction:column;}
+
+    /* Orbital bg */
+    #orbital-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+    .orb-node{position:absolute;border-radius:50%;background:rgba(255,255,255,0.88);
+      border:1px solid rgba(91,132,177,0.08);animation:orb-drift linear infinite;}
+    @keyframes orb-drift{
+      0%{transform:translate(0,0);opacity:var(--os);}
+      40%{transform:translate(var(--dx1),var(--dy1));opacity:var(--om);}
+      70%{transform:translate(var(--dx2),var(--dy2));opacity:var(--os);}
+      100%{transform:translate(0,0);opacity:var(--om);}
+    }
+    @media(prefers-reduced-motion:reduce){.orb-node{animation:none;}}
+
+    header,main,footer{position:relative;z-index:1;}
+
+    /* Header */
+    #site-header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:1rem 2.5rem;border-bottom:1px solid var(--border);
+      background:rgba(244,244,241,0.93);backdrop-filter:blur(12px);
+      position:sticky;top:0;z-index:100;
+    }
+    .brand{display:flex;align-items:center;gap:0.65rem;
+      font-family:var(--font-brand);font-size:0.78rem;font-weight:500;
+      letter-spacing:0.26em;text-transform:uppercase;color:var(--text);}
+    .brand-pip{width:7px;height:7px;background:var(--lime);border:1px solid var(--sage);flex-shrink:0;}
+    .nav-right{display:flex;align-items:center;gap:1.5rem;}
+    .user-tag{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;
+      color:var(--muted);font-variant:small-caps;}
+    .signout-btn{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.12em;
+      color:var(--faint);background:none;border:1px solid var(--border);
+      padding:0.3rem 0.65rem;cursor:pointer;text-transform:uppercase;
+      transition:border-color 0.2s,color 0.2s;}
+    .signout-btn:hover{border-color:var(--sage);color:var(--sage);}
+
+    /* Main */
+    main{flex:1;max-width:900px;width:100%;margin:0 auto;padding:3rem 1.5rem 4rem;}
+
+    /* Page header */
+    .page-eyebrow{
+      display:flex;align-items:center;gap:0.6rem;
+      font-family:var(--font-mono);font-variant:small-caps;
+      font-size:0.68rem;letter-spacing:0.2em;color:var(--blue);margin-bottom:1rem;
+    }
+    .eyebrow-rule{display:inline-block;width:18px;height:1px;background:var(--blue-lt);opacity:0.45;}
+    .page-title{
+      font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.8rem);
+      font-weight:300;text-transform:uppercase;letter-spacing:0.05em;
+      color:var(--text);margin-bottom:0.35rem;
+      text-shadow:-0.5px -0.5px 0 rgba(255,255,255,0.95),0.5px 0.5px 1px rgba(26,26,24,0.1);
+    }
+    .page-sub{font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.14em;
+      color:var(--faint);margin-bottom:2.5rem;font-variant:small-caps;}
+
+    /* Section label */
+    .section-label{
+      font-family:var(--font-mono);font-variant:small-caps;
+      font-size:0.63rem;letter-spacing:0.18em;color:var(--blue);
+      margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;
+    }
+    .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+    /* Stat cards */
+    .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+      background:var(--border);border:1px solid var(--border);margin-bottom:2rem;}
+    .stat-card{background:var(--surface);padding:1.4rem 1.5rem;
+      box-shadow:inset 1px 1px 0 rgba(255,255,255,0.7);}
+    .stat-val{font-family:var(--font-display);font-size:2.2rem;font-weight:300;
+      color:var(--text);line-height:1;margin-bottom:0.3rem;}
+    .stat-val .unit{font-size:1rem;color:var(--sage);}
+    .stat-key{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.16em;
+      color:var(--faint);text-transform:uppercase;}
+
+    /* Tracker */
+    .tracker-wrap{border:1px solid var(--border);background:var(--surface);
+      box-shadow:inset 1px 1px 0 rgba(255,255,255,0.7);margin-bottom:2rem;}
+    .tracker-head{display:grid;grid-template-columns:2fr 1fr 1fr 1.6fr;gap:0.5rem;
+      padding:0.55rem 1.25rem;border-bottom:1px solid var(--border);}
+    .tracker-col{font-family:var(--font-mono);font-size:0.57rem;
+      letter-spacing:0.15em;color:var(--faint);text-transform:uppercase;}
+    .tracker-row{display:grid;grid-template-columns:2fr 1fr 1fr 1.6fr;gap:0.5rem;
+      padding:1rem 1.25rem;border-bottom:1px solid rgba(212,212,206,0.5);
+      transition:background 0.15s;align-items:center;}
+    .tracker-row:last-child{border-bottom:none;}
+    .tracker-row:hover{background:rgba(255,255,255,0.45);}
+    .asset-name{font-family:var(--font-ui);font-size:0.82rem;font-weight:400;color:var(--text);}
+    .asset-sub{font-family:var(--font-mono);font-size:0.57rem;letter-spacing:0.07em;color:var(--faint);margin-top:0.15rem;}
+    .drift-val{font-family:var(--font-mono);font-size:0.75rem;color:var(--muted);}
+    .score-val{font-family:var(--font-mono);font-size:0.78rem;font-weight:500;
+      color:var(--sage);text-shadow:0 0 8px rgba(204,224,123,0.3);}
+    .ts-wrap{display:flex;align-items:center;gap:0.4rem;}
+    .ts-val{font-family:var(--font-mono);font-size:0.62rem;color:var(--faint);}
+    .pulse-dot{display:inline-block;width:5px;height:5px;border-radius:50%;
+      background:var(--sage);flex-shrink:0;animation:pulse 2.2s ease-in-out infinite;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.2;}}
+    @media(prefers-reduced-motion:reduce){.pulse-dot{animation:none;}}
+
+    /* Activity log */
+    .log-wrap{border:1px solid var(--border);background:var(--surface);
+      box-shadow:inset 1px 1px 0 rgba(255,255,255,0.7);}
+    .log-row{display:flex;align-items:baseline;justify-content:space-between;
+      padding:0.7rem 1.25rem;border-bottom:1px solid rgba(212,212,206,0.4);}
+    .log-row:last-child{border-bottom:none;}
+    .log-event{font-family:var(--font-ui);font-size:0.82rem;color:var(--text);}
+    .log-time{font-family:var(--font-mono);font-size:0.6rem;color:var(--faint);}
+
+    /* Footer */
+    footer{position:relative;z-index:1;border-top:1px solid var(--border);
+      padding:1rem 2.5rem;display:flex;align-items:center;justify-content:center;
+      background:rgba(244,244,241,0.85);}
+    footer span{font-family:var(--font-brand);font-size:0.58rem;
+      letter-spacing:0.2em;color:var(--faint);text-transform:uppercase;}
+
+    @media(max-width:640px){
+      #site-header{padding:1rem 1.25rem;}
+      main{padding:2rem 1rem 3rem;}
+      .stat-grid{grid-template-columns:1fr;}
+      .tracker-head,.tracker-row{grid-template-columns:1.6fr 0.9fr 0.9fr;}
+      .tracker-head .col-ts,.tracker-row .cell-ts{display:none;}
+      footer{padding:1rem 1.25rem;}
+    }
+  </style>
+</head>
+<body>
+  <div id="orbital-bg" aria-hidden="true"></div>
+
+  <header id="site-header">
+    <div class="brand"><span class="brand-pip"></span>Datum Major</div>
+    <div class="nav-right">
+      <span class="user-tag" id="user-email-display">—</span>
+      <button class="signout-btn" onclick="handleSignOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <main>
+    <p class="page-eyebrow"><span class="eyebrow-rule"></span>Orbital Lens · User Dashboard</p>
+    <h1 class="page-title">Your Verification View</h1>
+    <p class="page-sub" id="welcome-line">Welcome back.</p>
+
+    <!-- Stats -->
+    <p class="section-label">Account Overview</p>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-val">3<span class="unit"></span></div>
+        <div class="stat-key">Assets Tracked</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">99<span class="unit">%</span></div>
+        <div class="stat-key">Mean Rep. Score</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="session-count">1<span class="unit"></span></div>
+        <div class="stat-key">Sessions This Month</div>
+      </div>
+    </div>
+
+    <!-- Orbital Trust Engine -->
+    <p class="section-label">Orbital Trust Engine · Live</p>
+    <div class="tracker-wrap" role="table">
+      <div class="tracker-head" role="row">
+        <span class="tracker-col">Asset</span>
+        <span class="tracker-col">Drift</span>
+        <span class="tracker-col">Rep.</span>
+        <span class="tracker-col col-ts">Verified</span>
+      </div>
+      <div id="tracker-body"></div>
+    </div>
+
+    <!-- Activity log -->
+    <p class="section-label">Recent Activity</p>
+    <div class="log-wrap" id="activity-log">
+      <div class="log-row">
+        <span class="log-event">Session initiated · Orbital Lens</span>
+        <span class="log-time" id="log-time-1">—</span>
+      </div>
+      <div class="log-row">
+        <span class="log-event">Identity verified · Auth layer</span>
+        <span class="log-time" id="log-time-2">—</span>
+      </div>
+      <div class="log-row">
+        <span class="log-event">OTE stream connected</span>
+        <span class="log-time" id="log-time-3">—</span>
+      </div>
+    </div>
+  </main>
+
+  <footer><span>Datum Major · Orbital Lens v1.0 · Est. 2026</span></footer>
+
+  <script>
+    const SUPABASE_URL  = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY';
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    /* ── Auth gate — redirect to login if no session ── */
+    (async function() {
+      const { data:{ session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = '../login.html'; return; }
+
+      const user  = session.user;
+      const email = user.email;
+
+      document.getElementById('user-email-display').textContent = email;
+      document.getElementById('welcome-line').textContent =
+        'Welcome back, ' + email.split('@')[0] + '.';
+
+      /* Log timestamps */
+      const now = new Date();
+      const fmt = d => d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      document.getElementById('log-time-1').textContent = fmt(now);
+      document.getElementById('log-time-2').textContent = fmt(new Date(now-1200));
+      document.getElementById('log-time-3').textContent = fmt(new Date(now-2800));
+    })();
+
+    /* ── Sign out ── */
+    async function handleSignOut() {
+      await sb.auth.signOut();
+      window.location.href = '../login.html';
+    }
+
+    /* ── OTE tracker (simulated — Option A) ── */
+    const ASSETS = [
+      { id:'gps',     name:'GPS Constellation Tracking Network', sub:'NAVSTAR Baseline · Block III SV',
+        db:0.04, dr:0.03, unit:'m',  sb:99.0, sr:0.4 },
+      { id:'earth',   name:'Earth Observation Matrix',           sub:'LANDSAT Cross-Check · Band 8',
+        db:0.02, dr:0.03, unit:'m',  sb:98.4, sr:0.6 },
+      { id:'climate', name:'Terrestrial Climate Sensor Array',   sub:'Surface Grid · WMO Station Network',
+        db:0.01, dr:0.02, unit:'°C', sb:97.5, sr:0.7 },
+    ];
+
+    const body = document.getElementById('tracker-body');
+    ASSETS.forEach(a => {
+      const row = document.createElement('div');
+      row.className = 'tracker-row'; row.dataset.id = a.id;
+      row.innerHTML = `
+        <div><div class="asset-name">${a.name}</div><div class="asset-sub">${a.sub}</div></div>
+        <div class="drift-val" data-f="drift">—</div>
+        <div class="score-val" data-f="score">—</div>
+        <div class="ts-wrap cell-ts"><span class="pulse-dot"></span><span class="ts-val" data-f="ts">—</span></div>`;
+      body.appendChild(row);
+    });
+
+    function rnd(min,max){ return Math.random()*(max-min)+min; }
+    function pad(n,d){ return String(Math.floor(n)).padStart(d,'0'); }
+    function fmt(d){ return pad(d.getUTCHours(),2)+':'+pad(d.getUTCMinutes(),2)+':'+
+      pad(d.getUTCSeconds(),2)+'.'+pad(d.getUTCMilliseconds()/10,2)+' UTC'; }
+
+    const state = ASSETS.map(a => ({
+      drift: (Math.random()>.5?'+':'−')+(a.db+rnd(0,a.dr)).toFixed(2)+a.unit,
+      score: (a.sb+rnd(0,a.sr)).toFixed(1)+'%',
+      next: Date.now()+rnd(4000,8000)
+    }));
+
+    (function tick(){
+      const now = Date.now();
+      ASSETS.forEach((a,i) => {
+        if(now>=state[i].next){
+          state[i].drift=(Math.random()>.5?'+':'−')+(a.db+rnd(0,a.dr)).toFixed(2)+a.unit;
+          state[i].score=(a.sb+rnd(0,a.sr)).toFixed(1)+'%';
+          state[i].next=now+rnd(4000,8000);
+        }
+        const row = document.querySelector(`[data-id="${a.id}"]`);
+        if(!row) return;
+        row.querySelector('[data-f="drift"]').textContent = state[i].drift;
+        row.querySelector('[data-f="score"]').textContent = state[i].score;
+        row.querySelector('[data-f="ts"]').textContent    = fmt(new Date(now-i*1300));
+      });
+      requestAnimationFrame(tick);
+    })();
+
+    /* ── Orbital bg ── */
+    (function(){
+      var c=document.getElementById('orbital-bg');
+      for(var i=0;i<22;i++){
+        var n=document.createElement('span'); n.className='orb-node';
+        var sz=(4+Math.random()*18).toFixed(1);
+        n.style.cssText=['width:'+sz+'px','height:'+sz+'px',
+          'left:'+(Math.random()*100).toFixed(2)+'%','top:'+(Math.random()*100).toFixed(2)+'%',
+          '--dx1:'+((Math.random()-.5)*160).toFixed(1)+'px',
+          '--dy1:'+((Math.random()-.5)*100).toFixed(1)+'px',
+          '--dx2:'+((Math.random()-.5)*120).toFixed(1)+'px',
+          '--dy2:'+((Math.random()-.5)*80).toFixed(1)+'px',
+          '--os:'+(0.05+Math.random()*0.12).toFixed(3),
+          '--om:'+(0.12+Math.random()*0.14).toFixed(3),
+          'animation-duration:'+(18+Math.random()*30).toFixed(1)+'s',
+          'animation-delay:-'+(Math.random()*48).toFixed(1)+'s'
+        ].join(';'); c.appendChild(n);
+      }
+    })();
+  </script>
+</body>
+</html>
