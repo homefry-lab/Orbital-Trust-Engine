@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orbital Lens — Datum Major</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:wght@300;400;600&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #F4F4F1;
+      --surface:  #EDEDEA;
+      --s2:       #E6E6E2;
+      --text:     #1A1A18;
+      --muted:    #8A8A7A;
+      --faint:    #B8B8AE;
+      --border:   #D4D4CE;
+      --blue:     #5B84B1;
+      --blue-lt:  #7FA1C3;
+      --sage:     #6D6E5A;
+      --lime:     #cce07b;
+      --lime-dk:  #a8c247;
+      --tan-lt:   #A08560;
+      --font-brand:   'Cinzel', serif;
+      --font-display: 'Cormorant Garamond', serif;
+      --font-mono:    'DM Mono', monospace;
+      --font-ui:      'Inter', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-weight: 300;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Orbital bg nodes */
+    #orbital-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb-node {
+      position: absolute; border-radius: 50%;
+      background: rgba(255,255,255,0.88);
+      border: 1px solid rgba(91,132,177,0.08);
+      animation: orb-drift linear infinite;
+    }
+    @keyframes orb-drift {
+      0%   { transform: translate(0,0);                   opacity: var(--os); }
+      40%  { transform: translate(var(--dx1),var(--dy1)); opacity: var(--om); }
+      70%  { transform: translate(var(--dx2),var(--dy2)); opacity: var(--os); }
+      100% { transform: translate(0,0);                   opacity: var(--om); }
+    }
+    @media (prefers-reduced-motion: reduce) { .orb-node { animation: none; } }
+
+    header, main, footer { position: relative; z-index: 1; }
+
+    /* Header */
+    #site-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.1rem 2.5rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(244,244,241,0.92);
+      backdrop-filter: blur(12px);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 0.65rem;
+      font-family: var(--font-brand);
+      font-size: 0.78rem; font-weight: 500;
+      letter-spacing: 0.26em; text-transform: uppercase;
+      color: var(--text); user-select: none;
+    }
+    .brand-pip { width: 7px; height: 7px; background: var(--lime); border: 1px solid var(--sage); flex-shrink: 0; }
+    .header-tag {
+      font-family: var(--font-mono); font-size: 0.6rem;
+      letter-spacing: 0.16em; color: var(--faint);
+      font-variant: small-caps; text-transform: uppercase;
+    }
+
+    /* Main layout */
+    main {
+      flex: 1; display: flex; align-items: center;
+      justify-content: center; padding: 3rem 1.5rem;
+    }
+
+    .login-wrap {
+      width: 100%; max-width: 420px;
+      display: flex; flex-direction: column; align-items: center; gap: 2rem;
+    }
+
+    /* Eyebrow */
+    .eyebrow {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-family: var(--font-mono); font-variant: small-caps;
+      font-size: 0.68rem; letter-spacing: 0.2em; color: var(--blue);
+    }
+    .eyebrow-rule { display: inline-block; width: 18px; height: 1px; background: var(--blue-lt); opacity: 0.45; }
+
+    /* Portal title */
+    .portal-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      font-weight: 300; text-align: center; line-height: 1.1;
+      color: var(--text); text-transform: uppercase; letter-spacing: 0.06em;
+      text-shadow:
+        -0.5px -0.5px 0   rgba(255,255,255,0.95),
+         0.5px  0.5px 1px rgba(26,26,24,0.12),
+         0      0     5px rgba(91,132,177,0.07);
+    }
+    .portal-title span {
+      display: block; color: var(--blue); font-weight: 300;
+      font-size: 0.78em; letter-spacing: 0.1em;
+      text-shadow:
+        -0.5px -0.5px 0   rgba(255,255,255,0.95),
+         0.5px  0.5px 1px rgba(91,132,177,0.22),
+         0      0     6px rgba(91,132,177,0.1);
+    }
+
+    /* Card */
+    .login-card {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 2.25rem 2.25rem 2rem;
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,0.75), 0 4px 16px rgba(0,0,0,0.05);
+    }
+
+    .card-hed {
+      font-family: var(--font-mono); font-variant: small-caps;
+      font-size: 0.63rem; letter-spacing: 0.18em; color: var(--blue);
+      padding-bottom: 1rem; margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field { display: flex; flex-direction: column; gap: 0.38rem; margin-bottom: 1.1rem; }
+    .field label {
+      font-family: var(--font-mono); font-variant: small-caps;
+      font-size: 0.63rem; letter-spacing: 0.14em; color: var(--muted);
+    }
+    .field input {
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); font-family: var(--font-ui);
+      font-size: 0.97rem; font-weight: 300;
+      padding: 0.6rem 0.8rem; outline: none; width: 100%;
+      border-radius: 0;
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,0.55);
+      transition: border-color 0.18s;
+    }
+    .field input::placeholder { color: var(--tan-lt); font-size: 0.9rem; }
+    .field input:focus { border-color: var(--blue); }
+
+    /* Submit */
+    .login-btn {
+      width: 100%; margin-top: 0.5rem;
+      padding: 0.72rem 1.25rem;
+      background: transparent; border: 1px solid var(--sage);
+      color: var(--sage); font-family: var(--font-brand);
+      font-size: 0.7rem; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 0 1px 3px rgba(0,0,0,0.05);
+      transition: background 0.24s, border-color 0.24s, color 0.2s, transform 0.15s;
+    }
+    .login-btn:hover, .login-btn:focus-visible {
+      background: linear-gradient(135deg, var(--lime) 0%, #a8c960 55%, #8aaa40 100%);
+      border-color: var(--lime-dk); color: #2a2e1a;
+      transform: translateY(-1px);
+    }
+    .login-btn:active { transform: translateY(0); }
+    .login-btn:disabled {
+      opacity: 0.55; cursor: not-allowed; transform: none;
+      background: transparent; border-color: var(--border); color: var(--faint);
+    }
+
+    /* Status message */
+    .status-msg {
+      font-family: var(--font-mono); font-size: 0.65rem;
+      letter-spacing: 0.1em; text-align: center;
+      padding: 0.5rem; min-height: 1.4rem;
+      transition: color 0.2s;
+    }
+    .status-msg.error { color: #a04040; }
+    .status-msg.info  { color: var(--blue); }
+    .status-msg.ok    { color: var(--sage); }
+
+    /* Divider */
+    .card-divider {
+      height: 1px; background: var(--border);
+      margin: 1.25rem 0;
+    }
+
+    /* Forgot password toggle */
+    .text-link {
+      font-family: var(--font-mono); font-size: 0.6rem;
+      letter-spacing: 0.1em; color: var(--blue-lt);
+      background: none; border: none; cursor: pointer;
+      text-align: center; width: 100%;
+      text-decoration: underline; text-underline-offset: 3px;
+      transition: color 0.15s;
+    }
+    .text-link:hover { color: var(--blue); }
+
+    /* Footer */
+    #site-footer {
+      position: relative; z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 1rem 2.5rem;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(244,244,241,0.85);
+    }
+    #site-footer span {
+      font-family: var(--font-brand); font-size: 0.58rem;
+      font-weight: 400; letter-spacing: 0.2em;
+      color: var(--faint); text-transform: uppercase;
+    }
+
+    @media (max-width: 480px) {
+      #site-header { padding: 1rem 1.25rem; }
+      .login-card  { padding: 1.6rem 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="orbital-bg" aria-hidden="true"></div>
+
+  <header id="site-header">
+    <div class="brand">
+      <span class="brand-pip"></span>
+      Datum Major
+    </div>
+    <span class="header-tag">Orbital Lens · Restricted Access</span>
+  </header>
+
+  <main>
+    <div class="login-wrap">
+
+      <p class="eyebrow">
+        <span class="eyebrow-rule"></span>
+        Orbital Lens
+        <span class="eyebrow-rule"></span>
+      </p>
+
+      <h1 class="portal-title">
+        Sovereign Access<br/>
+        <span>Grounded Identity.</span>
+      </h1>
+
+      <div class="login-card">
+        <p class="card-hed" id="form-mode-label">Verified Access — Sign In</p>
+
+        <!-- LOGIN FORM -->
+        <div id="login-form">
+          <div class="field">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" placeholder="Enter your registered email" autocomplete="email"/>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password"/>
+          </div>
+          <p class="status-msg" id="login-status"></p>
+          <button class="login-btn" id="login-btn" type="button" onclick="handleLogin()">
+            Enter Orbital Lens
+          </button>
+          <div class="card-divider"></div>
+          <button class="text-link" type="button" onclick="toggleMode('reset')">
+            Forgot password? Request reset link
+          </button>
+        </div>
+
+        <!-- RESET FORM (hidden by default) -->
+        <div id="reset-form" style="display:none;">
+          <div class="field">
+            <label for="reset-email">Email Address</label>
+            <input type="email" id="reset-email" placeholder="Enter your registered email"/>
+          </div>
+          <p class="status-msg" id="reset-status"></p>
+          <button class="login-btn" id="reset-btn" type="button" onclick="handleReset()">
+            Send Reset Link
+          </button>
+          <div class="card-divider"></div>
+          <button class="text-link" type="button" onclick="toggleMode('login')">
+            ← Back to sign in
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <footer id="site-footer">
+    <span>Datum Major · Est. 2026 · Orbital Lens v1.0</span>
+  </footer>
+
+  <script>
+    /* ── CONFIG — replace with your Supabase project values ── */
+    const SUPABASE_URL    = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON   = 'YOUR_SUPABASE_ANON_KEY';
+    const PORTAL_USER_URL = './portal/index.html';
+    const PORTAL_ADMIN_URL= './portal/admin.html';
+
+    /* ── Init Supabase ── */
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    /* ── If already logged in, redirect immediately ── */
+    (async function () {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) await routeByRole(session.user);
+    })();
+
+    /* ── Role-based routing ── */
+    async function routeByRole(user) {
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      const role = profile?.role || 'user';
+      window.location.href = role === 'admin' ? PORTAL_ADMIN_URL : PORTAL_USER_URL;
+    }
+
+    /* ── Login handler ── */
+    async function handleLogin() {
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn      = document.getElementById('login-btn');
+      const status   = document.getElementById('login-status');
+
+      if (!email || !password) {
+        setStatus(status, 'Email and password required.', 'error'); return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Authenticating...';
+      setStatus(status, 'Verifying credentials...', 'info');
+
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        setStatus(status, 'Access denied. Check credentials.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Enter Orbital Lens';
+        return;
+      }
+
+      setStatus(status, 'Identity verified. Routing...', 'ok');
+      await routeByRole(data.user);
+    }
+
+    /* ── Password reset handler ── */
+    async function handleReset() {
+      const email  = document.getElementById('reset-email').value.trim();
+      const btn    = document.getElementById('reset-btn');
+      const status = document.getElementById('reset-status');
+
+      if (!email) { setStatus(status, 'Email address required.', 'error'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/login.html'
+      });
+
+      if (error) {
+        setStatus(status, 'Could not send reset link. Try again.', 'error');
+        btn.disabled = false; btn.textContent = 'Send Reset Link';
+      } else {
+        setStatus(status, 'Reset link sent. Check your inbox.', 'ok');
+        btn.textContent = 'Link Sent';
+      }
+    }
+
+    /* ── Toggle between login and reset views ── */
+    function toggleMode(mode) {
+      const isLogin = mode === 'login';
+      document.getElementById('login-form').style.display = isLogin ? 'block' : 'none';
+      document.getElementById('reset-form').style.display = isLogin ? 'none'  : 'block';
+      document.getElementById('form-mode-label').textContent =
+        isLogin ? 'Verified Access — Sign In' : 'Password Recovery';
+    }
+
+    /* ── Status helper ── */
+    function setStatus(el, msg, type) {
+      el.textContent = msg;
+      el.className = 'status-msg ' + type;
+    }
+
+    /* ── Enter key on password field ── */
+    document.getElementById('password').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') handleLogin();
+    });
+    document.getElementById('email').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') document.getElementById('password').focus();
+    });
+
+    /* ── Orbital bg nodes ── */
+    (function () {
+      var c = document.getElementById('orbital-bg');
+      for (var i = 0; i < 22; i++) {
+        var n = document.createElement('span');
+        n.className = 'orb-node';
+        var sz = (4 + Math.random() * 18).toFixed(1);
+        n.style.cssText = [
+          'width:'+sz+'px','height:'+sz+'px',
+          'left:'+(Math.random()*100).toFixed(2)+'%',
+          'top:'+(Math.random()*100).toFixed(2)+'%',
+          '--dx1:'+((Math.random()-.5)*160).toFixed(1)+'px',
+          '--dy1:'+((Math.random()-.5)*100).toFixed(1)+'px',
+          '--dx2:'+((Math.random()-.5)*120).toFixed(1)+'px',
+          '--dy2:'+((Math.random()-.5)*80).toFixed(1)+'px',
+          '--os:'+(0.05+Math.random()*0.12).toFixed(3),
+          '--om:'+(0.12+Math.random()*0.14).toFixed(3),
+          'animation-duration:'+(18+Math.random()*30).toFixed(1)+'s',
+          'animation-delay:-'+(Math.random()*48).toFixed(1)+'s'
+        ].join(';');
+        c.appendChild(n);
+      }
+    })();
+  </script>
+</body>
+</html>
