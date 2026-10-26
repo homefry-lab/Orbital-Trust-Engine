@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orbital Lens — Sign In</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=DM+Mono:wght@300;400&family=Inter:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:#F4F4F1; --surface:#EDEDEA; --text:#1A1A18; --muted:#5A5A52;
+      --faint:#8A8A7A; --border:#C8C8C2; --blue:#5B84B1; --sage:#6D6E5A;
+      --lime:#cce07b; --lime-dk:#a8c247; --error:#7A2A2A;
+      --font-brand:'Cinzel',serif; --font-mono:'DM Mono',monospace; --font-ui:'Inter',sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html,body{height:100%;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-ui);
+      font-weight:300;-webkit-font-smoothing:antialiased;
+      display:flex;flex-direction:column;min-height:100vh;overflow:hidden;}
+    #planet-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+    .planet{position:absolute;bottom:-18vw;right:-12vw;width:55vw;height:55vw;
+      min-width:360px;min-height:360px;border-radius:50%;
+      background:radial-gradient(ellipse at 35% 35%,
+        rgba(204,224,123,0.05) 0%,rgba(91,132,177,0.08) 40%,
+        rgba(109,110,90,0.06) 70%,transparent 100%);
+      border:1px solid rgba(91,132,177,0.08);}
+    .planet::before{content:'';position:absolute;top:50%;left:50%;
+      transform:translate(-50%,-50%) rotate(-18deg);
+      width:140%;height:26%;border-radius:50%;
+      border:1px solid rgba(91,132,177,0.06);
+      border-top-color:transparent;border-bottom-color:transparent;}
+    .orb-node{position:absolute;border-radius:50%;
+      background:rgba(255,255,255,0.75);border:1px solid rgba(91,132,177,0.07);
+      animation:orb linear infinite;}
+    @keyframes orb{
+      0%{transform:translate(0,0);opacity:var(--os);}
+      40%{transform:translate(var(--dx1),var(--dy1));opacity:var(--om);}
+      70%{transform:translate(var(--dx2),var(--dy2));opacity:var(--os);}
+      100%{transform:translate(0,0);opacity:var(--om);}
+    }
+    @media(prefers-reduced-motion:reduce){.orb-node{animation:none;}}
+    header,main,footer{position:relative;z-index:1;}
+    #site-header{
+      padding:0.85rem 2rem;border-bottom:1px solid rgba(200,200,194,0.5);
+      background:rgba(244,244,241,0.88);backdrop-filter:blur(10px);
+      display:flex;align-items:center;gap:0.55rem;}
+    .pip{width:6px;height:6px;background:var(--lime);border:1px solid var(--sage);flex-shrink:0;}
+    .brand-name{font-family:var(--font-brand);font-size:0.7rem;font-weight:500;
+      letter-spacing:0.24em;text-transform:uppercase;color:var(--text);}
+    .brand-div{width:1px;height:13px;background:var(--border);margin:0 0.45rem;}
+    .brand-sub{font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.16em;
+      color:var(--faint);font-variant:small-caps;text-transform:uppercase;}
+    main{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem 1.25rem;}
+    .card{width:100%;max-width:390px;
+      background:rgba(237,237,234,0.95);border:1px solid var(--border);
+      padding:2rem 2rem 1.75rem;
+      box-shadow:inset 1px 1px 0 rgba(255,255,255,0.8),0 4px 24px rgba(0,0,0,0.07);
+      backdrop-filter:blur(8px);}
+    .card-title{font-family:var(--font-brand);font-size:0.92rem;font-weight:500;
+      letter-spacing:0.18em;text-transform:uppercase;color:var(--text);margin-bottom:0.25rem;}
+    .card-sub{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.14em;
+      color:var(--faint);font-variant:small-caps;margin-bottom:1.4rem;
+      padding-bottom:1.1rem;border-bottom:1px solid var(--border);}
+    .field{display:flex;flex-direction:column;gap:0.32rem;margin-bottom:0.9rem;}
+    .field label{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.13em;
+      color:var(--muted);font-variant:small-caps;text-transform:uppercase;}
+    .field input{background:#FAFAF8;border:1px solid var(--border);
+      color:#1A1A18;font-family:var(--font-ui);font-size:0.97rem;font-weight:400;
+      padding:0.58rem 0.78rem;outline:none;width:100%;border-radius:0;
+      transition:border-color 0.18s;}
+    .field input::placeholder{color:#A8A89C;font-size:0.87rem;}
+    .field input:focus{border-color:var(--blue);background:#fff;}
+    .btn{width:100%;padding:0.66rem 1rem;background:transparent;
+      border:1px solid var(--sage);color:var(--sage);
+      font-family:var(--font-brand);font-size:0.67rem;font-weight:500;
+      letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;
+      margin-top:0.4rem;box-shadow:inset 0 1px 0 rgba(255,255,255,0.6);
+      transition:background 0.22s,border-color 0.22s,color 0.2s,transform 0.15s;}
+    .btn:hover,.btn:focus-visible{
+      background:linear-gradient(135deg,var(--lime) 0%,#a8c960 55%,#8aaa40 100%);
+      border-color:var(--lime-dk);color:#2a2e1a;transform:translateY(-1px);}
+    .btn:active{transform:translateY(0);}
+    .btn:disabled{opacity:0.45;cursor:not-allowed;transform:none;
+      background:transparent;border-color:var(--border);color:var(--faint);}
+    .divider{height:1px;background:var(--border);margin:1.1rem 0;}
+    .link-btn{display:block;width:100%;text-align:center;
+      font-family:var(--font-mono);font-size:0.59rem;letter-spacing:0.1em;
+      color:var(--blue);background:none;border:none;cursor:pointer;
+      text-decoration:underline;text-underline-offset:3px;transition:color 0.15s;}
+    .link-btn:hover{color:#3a6491;}
+    .status{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.08em;
+      text-align:center;padding:0.4rem;min-height:1.5rem;display:none;}
+    .status.show{display:block;}
+    .status.error{color:var(--error);background:rgba(122,42,42,0.06);border:1px solid rgba(122,42,42,0.15);}
+    .status.info{color:var(--blue);}
+    .status.ok{color:var(--sage);}
+    footer{position:relative;z-index:1;border-top:1px solid rgba(200,200,194,0.45);
+      padding:0.75rem 2rem;display:flex;align-items:center;justify-content:center;
+      background:rgba(244,244,241,0.8);}
+    footer span{font-family:var(--font-brand);font-size:0.54rem;
+      letter-spacing:0.2em;color:var(--faint);text-transform:uppercase;}
+    @media(max-width:480px){
+      #site-header{padding:0.75rem 1.25rem;}
+      main{padding:1.25rem 1rem;}
+      .card{padding:1.5rem 1.25rem;}
+    }
+  </style>
+</head>
+<body>
+  <div id="planet-bg" aria-hidden="true"><div class="planet"></div></div>
+  <header id="site-header">
+    <span class="pip"></span>
+    <span class="brand-name">Datum Major</span>
+    <span class="brand-div"></span>
+    <span class="brand-sub">Orbital Lens</span>
+  </header>
+  <main>
+    <div class="card">
+      <!-- LOGIN VIEW -->
+      <div id="v-login">
+        <p class="card-title">Sign In</p>
+        <p class="card-sub">Orbital Lens · Verified Access</p>
+        <div class="field">
+          <label for="l-email">Email</label>
+          <input type="email" id="l-email" placeholder="your@email.com" autocomplete="email"/>
+        </div>
+        <div class="field">
+          <label for="l-pwd">Password</label>
+          <input type="password" id="l-pwd" placeholder="Your password" autocomplete="current-password"/>
+        </div>
+        <p class="status" id="l-status"></p>
+        <button class="btn" id="l-btn" onclick="doLogin()">Enter Orbital Lens</button>
+        <div class="divider"></div>
+        <button class="link-btn" onclick="show('reset')">Forgot password?</button>
+      </div>
+      <!-- RESET REQUEST VIEW -->
+      <div id="v-reset" style="display:none">
+        <p class="card-title">Reset Password</p>
+        <p class="card-sub">We'll send a reset link to your email</p>
+        <div class="field">
+          <label for="r-email">Email</label>
+          <input type="email" id="r-email" placeholder="your@email.com"/>
+        </div>
+        <p class="status" id="r-status"></p>
+        <button class="btn" id="r-btn" onclick="doReset()">Send Reset Link</button>
+        <div class="divider"></div>
+        <button class="link-btn" onclick="show('login')">← Back to sign in</button>
+      </div>
+      <!-- SET NEW PASSWORD VIEW — shown when reset token detected in URL -->
+      <div id="v-newpwd" style="display:none">
+        <p class="card-title">New Password</p>
+        <p class="card-sub">Choose something you'll remember — write it down</p>
+        <div class="field">
+          <label for="np-1">New Password</label>
+          <input type="password" id="np-1" placeholder="Minimum 8 characters"/>
+        </div>
+        <div class="field">
+          <label for="np-2">Confirm Password</label>
+          <input type="password" id="np-2" placeholder="Repeat password"/>
+        </div>
+        <p class="status" id="np-status"></p>
+        <button class="btn" id="np-btn" onclick="doNewPassword()">Save & Sign In</button>
+      </div>
+    </div>
+  </main>
+  <footer><span>Datum Major · Orbital Lens · Est. 2026</span></footer>
+  <script>
+    const SB_URL  = 'https://dijwobdpexizddrhyqsv.supabase.co';
+    const SB_KEY  = 'sb_publishable_BxDLiFRxLaalTkEbv7EE-Q_P9rbhzXQ';
+    const U_USER  = 'portal/index.html';
+    const U_ADMIN = 'portal/admin.html';
+    const { createClient } = supabase;
+    const sb = createClient(SB_URL, SB_KEY);
+
+    /* On load — check for recovery token OR existing session */
+    window.addEventListener('load', async () => {
+      const hash  = window.location.hash;
+      const p     = new URLSearchParams(hash.replace('#','?'));
+      const type  = p.get('type');
+      const token = p.get('access_token');
+      const ref   = p.get('refresh_token') || '';
+      if (type === 'recovery' && token) {
+        await sb.auth.setSession({ access_token: token, refresh_token: ref });
+        show('newpwd');
+        return;
+      }
+      const { data:{ session } } = await sb.auth.getSession();
+      if (session) route(session.user);
+    });
+
+    async function route(user) {
+      const { data: pr } = await sb.from('profiles').select('role').eq('id', user.id).single();
+      window.location.href = (pr?.role === 'admin') ? U_ADMIN : U_USER;
+    }
+
+    async function doLogin() {
+      const email = document.getElementById('l-email').value.trim();
+      const pwd   = document.getElementById('l-pwd').value;
+      const btn   = document.getElementById('l-btn');
+      const st    = document.getElementById('l-status');
+      if (!email || !pwd) { setS(st,'Email and password required.','error'); return; }
+      btn.disabled=true; btn.textContent='Verifying...';
+      setS(st,'Authenticating...','info');
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+      if (error) {
+        setS(st,'Incorrect email or password.','error');
+        btn.disabled=false; btn.textContent='Enter Orbital Lens'; return;
+      }
+      setS(st,'Verified. Routing...','ok');
+      route(data.user);
+    }
+
+    async function doReset() {
+      const email = document.getElementById('r-email').value.trim();
+      const btn   = document.getElementById('r-btn');
+      const st    = document.getElementById('r-status');
+      if (!email) { setS(st,'Enter your email.','error'); return; }
+      btn.disabled=true; btn.textContent='Sending...';
+      const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://homefry-lab.github.io/Orbital-Trust-Engine/login.html'
+      });
+      if (error) {
+        setS(st,'Could not send. Try again.','error');
+        btn.disabled=false; btn.textContent='Send Reset Link';
+      } else {
+        setS(st,'Sent — check your inbox and click it quickly.','ok');
+        btn.textContent='Sent ✓';
+      }
+    }
+
+    async function doNewPassword() {
+      const p1  = document.getElementById('np-1').value;
+      const p2  = document.getElementById('np-2').value;
+      const btn = document.getElementById('np-btn');
+      const st  = document.getElementById('np-status');
+      if (p1.length < 8) { setS(st,'Minimum 8 characters.','error'); return; }
+      if (p1 !== p2)      { setS(st,'Passwords do not match.','error'); return; }
+      btn.disabled=true; btn.textContent='Saving...';
+      setS(st,'Setting your password...','info');
+      const { data, error } = await sb.auth.updateUser({ password: p1 });
+      if (error) {
+        setS(st,'Failed. Request a new reset link.','error');
+        btn.disabled=false; btn.textContent='Save & Sign In'; return;
+      }
+      setS(st,'Password saved. Signing in...','ok');
+      route(data.user);
+    }
+
+    function show(v) {
+      ['login','reset','newpwd'].forEach(n =>
+        document.getElementById('v-'+n).style.display = n===v?'block':'none');
+    }
+    function setS(el, msg, type) {
+      el.textContent=msg; el.className='status show '+type;
+    }
+
+    /* Enter key support */
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const id = document.activeElement?.id;
+      if (id==='l-email')  document.getElementById('l-pwd').focus();
+      else if (id==='l-pwd')  doLogin();
+      else if (id==='r-email') doReset();
+      else if (id==='np-1') document.getElementById('np-2').focus();
+      else if (id==='np-2') doNewPassword();
+    });
+
+    /* Orbital nodes */
+    (function(){
+      const bg = document.getElementById('planet-bg');
+      for (let i=0; i<14; i++) {
+        const n = document.createElement('span');
+        n.className='orb-node';
+        const sz=(3+Math.random()*14).toFixed(1);
+        n.style.cssText=[
+          `width:${sz}px`,`height:${sz}px`,
+          `left:${(Math.random()*100).toFixed(2)}%`,
+          `top:${(Math.random()*100).toFixed(2)}%`,
+          `--dx1:${((Math.random()-.5)*140).toFixed(1)}px`,
+          `--dy1:${((Math.random()-.5)*90).toFixed(1)}px`,
+          `--dx2:${((Math.random()-.5)*100).toFixed(1)}px`,
+          `--dy2:${((Math.random()-.5)*70).toFixed(1)}px`,
+          `--os:${(0.04+Math.random()*0.1).toFixed(3)}`,
+          `--om:${(0.1+Math.random()*0.12).toFixed(3)}`,
+          `animation-duration:${(20+Math.random()*28).toFixed(1)}s`,
+          `animation-delay:-${(Math.random()*40).toFixed(1)}s`
+        ].join(';');
+        bg.appendChild(n);
+      }
+    })();
+  </script>
+</body>
+</html>

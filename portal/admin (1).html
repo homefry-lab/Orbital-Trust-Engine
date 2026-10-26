@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orbital Lens — Command</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=DM+Mono:wght@300;400&family=Inter:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --bg:#F4F4F1;--surface:#EDEDEA;--card:#E8E8E4;--text:#1A1A18;--muted:#5A5A52;
+      --faint:#8A8A7A;--border:#C8C8C2;--blue:#5B84B1;--sage:#6D6E5A;
+      --lime:#cce07b;--lime-dk:#a8c247;
+      --status-ok:#3A7A4A;--status-watch:#8A6A00;--status-urgent:#8A1A1A;--status-hazard:#C25A00;
+      --font-brand:'Cinzel',serif;--font-mono:'DM Mono',monospace;--font-ui:'Inter',sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html,body{background:var(--bg);color:var(--text);font-family:var(--font-ui);
+      font-weight:300;-webkit-font-smoothing:antialiased;}
+    #site-header{
+      padding:0.85rem 2rem;border-bottom:1px solid rgba(200,200,194,0.5);
+      background:rgba(244,244,241,0.95);backdrop-filter:blur(10px);
+      display:flex;align-items:center;gap:0.55rem;position:sticky;top:0;z-index:10;}
+    .pip{width:6px;height:6px;background:var(--lime);border:1px solid var(--sage);}
+    .brand-name{font-family:var(--font-brand);font-size:0.7rem;font-weight:500;
+      letter-spacing:0.24em;text-transform:uppercase;}
+    .brand-div{width:1px;height:13px;background:var(--border);margin:0 0.45rem;}
+    .brand-sub{font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.16em;
+      color:var(--faint);text-transform:uppercase;flex:1;}
+    .admin-badge{font-family:var(--font-mono);font-size:0.48rem;letter-spacing:0.14em;
+      padding:0.15rem 0.5rem;border:1px solid var(--lime-dk);color:var(--sage);
+      background:rgba(204,224,123,0.12);text-transform:uppercase;}
+    .hdr-right{display:flex;align-items:center;gap:0.75rem;margin-left:auto;}
+    .user-label{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.1em;color:var(--muted);}
+    .btn-sm{padding:0.35rem 0.85rem;background:transparent;border:1px solid var(--border);
+      color:var(--muted);font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.1em;
+      cursor:pointer;transition:all 0.18s;}
+    .btn-sm:hover{border-color:var(--sage);color:var(--sage);}
+    main{max-width:1200px;margin:0 auto;padding:2rem 1.5rem;}
+    .page-title{font-family:var(--font-brand);font-size:1.05rem;font-weight:500;
+      letter-spacing:0.15em;text-transform:uppercase;color:var(--text);margin-bottom:0.2rem;}
+    .page-sub{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.1em;
+      color:var(--faint);margin-bottom:2rem;}
+    .section-rule{border:none;border-top:1px solid var(--border);margin:2rem 0;}
+    .section-label{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.15em;
+      color:var(--faint);text-transform:uppercase;margin-bottom:0.9rem;}
+    /* Stats row */
+    .stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;
+      background:var(--border);border:1px solid var(--border);margin-bottom:2rem;}
+    .stat-cell{background:var(--surface);padding:1rem 1.1rem;}
+    .stat-val{font-family:var(--font-brand);font-size:1.4rem;color:var(--text);margin-bottom:0.25rem;}
+    .stat-key{font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.1em;color:var(--faint);}
+    /* Satellite grid */
+    .sat-table{width:100%;border-collapse:collapse;border:1px solid var(--border);}
+    .sat-table th{background:var(--surface);font-family:var(--font-mono);font-size:0.55rem;
+      letter-spacing:0.12em;color:var(--faint);text-transform:uppercase;text-align:left;
+      padding:0.65rem 0.9rem;border-bottom:1px solid var(--border);}
+    .sat-table td{background:var(--bg);font-family:var(--font-mono);font-size:0.65rem;
+      color:var(--text);padding:0.6rem 0.9rem;border-bottom:1px solid rgba(200,200,194,0.4);}
+    .sat-table tr:hover td{background:var(--surface);}
+    .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:0.4rem;}
+    .dot-ok{background:var(--status-ok);}
+    .dot-watch{background:var(--status-watch);}
+    .dot-urgent{background:var(--status-urgent);}
+    .dot-hazard{background:var(--status-hazard);}
+    .badge{padding:0.15rem 0.45rem;font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase;}
+    .badge-ok{background:rgba(58,122,74,0.12);color:var(--status-ok);}
+    .badge-watch{background:rgba(138,106,0,0.12);color:var(--status-watch);}
+    .badge-urgent{background:rgba(138,26,26,0.12);color:var(--status-urgent);}
+    .badge-hazard{background:rgba(194,90,0,0.12);color:var(--status-hazard);}
+    /* User table */
+    .user-table{width:100%;border-collapse:collapse;border:1px solid var(--border);}
+    .user-table th{background:var(--surface);font-family:var(--font-mono);font-size:0.55rem;
+      letter-spacing:0.12em;color:var(--faint);text-transform:uppercase;text-align:left;
+      padding:0.65rem 0.9rem;border-bottom:1px solid var(--border);}
+    .user-table td{background:var(--bg);font-family:var(--font-mono);font-size:0.63rem;
+      color:var(--text);padding:0.6rem 0.9rem;border-bottom:1px solid rgba(200,200,194,0.4);}
+    .user-table tr:hover td{background:var(--surface);}
+    select.role-sel{background:transparent;border:1px solid var(--border);color:var(--text);
+      font-family:var(--font-mono);font-size:0.6rem;padding:0.22rem 0.5rem;cursor:pointer;
+      outline:none;}
+    select.role-sel:focus{border-color:var(--blue);}
+    .btn-xs{padding:0.22rem 0.65rem;background:transparent;border:1px solid var(--border);
+      color:var(--muted);font-family:var(--font-mono);font-size:0.54rem;cursor:pointer;
+      transition:all 0.15s;}
+    .btn-xs:hover{border-color:var(--sage);color:var(--sage);}
+    .demo-banner{background:rgba(91,132,177,0.07);border:1px solid rgba(91,132,177,0.15);
+      padding:0.6rem 1rem;margin-bottom:1.5rem;
+      font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.08em;color:var(--blue);}
+    #loading{display:flex;flex-direction:column;align-items:center;justify-content:center;
+      min-height:70vh;gap:0.5rem;}
+    .loading-text{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.15em;color:var(--faint);}
+    @media(max-width:700px){
+      #site-header{padding:0.75rem 1rem;flex-wrap:wrap;}
+      main{padding:1.25rem 1rem;}
+      .stats-row{grid-template-columns:1fr 1fr;}
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header">
+    <span class="pip"></span>
+    <span class="brand-name">Datum Major</span>
+    <span class="brand-div"></span>
+    <span class="brand-sub">Orbital Lens</span>
+    <span class="admin-badge">Admin</span>
+    <div class="hdr-right">
+      <span class="user-label" id="user-label"></span>
+      <button class="btn-sm" onclick="doSignOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <div id="loading">
+    <span class="pip"></span>
+    <span class="loading-text">Verifying access...</span>
+  </div>
+
+  <main id="content" style="display:none">
+    <p class="page-title">Command Overview</p>
+    <p class="page-sub">Fleet integrity status · <span id="ts"></span></p>
+
+    <div class="demo-banner">
+      ⬡ Satellite data is illustrative — MVP demo. Real CDM + TLE data pipeline in development.
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-cell"><div class="stat-val" id="s-total">—</div><div class="stat-key">Tracked Objects</div></div>
+      <div class="stat-cell"><div class="stat-val" id="s-ok" style="color:var(--status-ok)">—</div><div class="stat-key">Nominal</div></div>
+      <div class="stat-cell"><div class="stat-val" id="s-watch" style="color:var(--status-watch)">—</div><div class="stat-key">Under Watch</div></div>
+      <div class="stat-cell"><div class="stat-val" id="s-urgent" style="color:var(--status-urgent)">—</div><div class="stat-key">Urgent</div></div>
+      <div class="stat-cell"><div class="stat-val" id="s-hazard" style="color:var(--status-hazard)">—</div><div class="stat-key">Hazard</div></div>
+      <div class="stat-cell"><div class="stat-val" id="s-users">—</div><div class="stat-key">Registered Users</div></div>
+    </div>
+
+    <!-- Satellite table -->
+    <p class="section-label">Fleet Status</p>
+    <table class="sat-table" id="sat-table">
+      <thead>
+        <tr>
+          <th>Object</th><th>NORAD</th><th>Operator</th>
+          <th>Alt (km)</th><th>Inc (°)</th>
+          <th>Int. Score</th><th>Status</th><th>Note</th>
+        </tr>
+      </thead>
+      <tbody id="sat-tbody"></tbody>
+    </table>
+
+    <hr class="section-rule"/>
+    <!-- User registry -->
+    <p class="section-label">User Registry</p>
+    <table class="user-table">
+      <thead>
+        <tr><th>Email</th><th>Role</th><th>Joined</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="user-tbody">
+        <tr><td colspan="4" style="color:var(--faint);font-size:0.6rem;">Loading users...</td></tr>
+      </tbody>
+    </table>
+    <p id="user-err" style="font-family:var(--font-mono);font-size:0.6rem;color:var(--status-urgent);margin-top:0.5rem;display:none;"></p>
+
+    <hr class="section-rule"/>
+    <!-- Rating methodology note -->
+    <p class="section-label">Rating Methodology (V0.1)</p>
+    <div style="max-width:580px;display:grid;gap:0.6rem;">
+      <div style="font-family:var(--font-mono);font-size:0.62rem;color:var(--muted);line-height:1.8;">
+        <span style="color:var(--status-ok)">● A / Nominal</span> — Operator acknowledged CDM within 48h and confirmed maneuver or stand-down decision.<br/>
+        <span style="color:var(--status-watch)">● B / Watch</span> — CDM issued, response window open or delayed acknowledgment (&gt;48h).<br/>
+        <span style="color:var(--status-urgent)">● C / Urgent</span> — Active conjunction risk, no confirmed maneuver. TLE delta indicates no response.<br/>
+        <span style="color:var(--status-hazard)">● — / Hazard</span> — Derelict or non-maneuverable. No operator contact possible.
+      </div>
+      <p style="font-family:var(--font-mono);font-size:0.56rem;color:var(--faint);">
+        Scores derived from TLE delta comparison against Space-Track CDM event timestamps. 
+        Private — not publicly disclosed. All ratings preliminary pending methodology peer review.
+      </p>
+    </div>
+  </main>
+
+  <script>
+    const SB_URL  = 'https://dijwobdpexizddrhyqsv.supabase.co';
+    const SB_KEY  = 'sb_publishable_BxDLiFRxLaalTkEbv7EE-Q_P9rbhzXQ';
+    const { createClient } = supabase;
+    const sb = createClient(SB_URL, SB_KEY);
+
+    const SATS = [
+      { name:'NOAA-19',    id:'33591', op:'NOAA',        alt:870,  inc:99.1,  score:'A',  status:'ok',     note:'Nominal' },
+      { name:'NOAA-18',    id:'28654', op:'NOAA',        alt:854,  inc:98.7,  score:'B+', status:'watch',  note:'CDM 2026-09-12 — response pending' },
+      { name:'NOAA-15',    id:'25338', op:'NOAA',        alt:808,  inc:98.7,  score:'A',  status:'ok',     note:'Nominal — backup mode' },
+      { name:'TERRA',      id:'25994', op:'NASA',        alt:705,  inc:98.2,  score:'A+', status:'ok',     note:'Maneuver confirmed 2026-10-01' },
+      { name:'AQUA',       id:'27424', op:'NASA',        alt:705,  inc:98.2,  score:'A',  status:'ok',     note:'Nominal' },
+      { name:'ISS',        id:'25544', op:'Multi-nat.',  alt:420,  inc:51.6,  score:'A',  status:'ok',     note:'Nominal' },
+      { name:'STARLINK-G4',id:'56782', op:'SpaceX',      alt:540,  inc:53.0,  score:'C',  status:'urgent', note:'Conjunction warning — 72h window' },
+      { name:'COSMOS-2251D',id:'33165',op:'Russia (def)',alt:780,  inc:74.0,  score:'—',  status:'hazard', note:'Debris field — non-maneuverable' },
+      { name:'IRIDIUM-33D', id:'33007',op:'Iridium',     alt:776,  inc:86.4,  score:'—',  status:'hazard', note:'Derelict since 2009 collision' },
+    ];
+
+    const DOT  = { ok:'dot-ok', watch:'dot-watch', urgent:'dot-urgent', hazard:'dot-hazard' };
+    const BTXT = { ok:'Nominal', watch:'Watch', urgent:'Urgent', hazard:'Hazard' };
+    const BCLS = { ok:'badge-ok', watch:'badge-watch', urgent:'badge-urgent', hazard:'badge-hazard' };
+
+    function buildSatTable() {
+      document.getElementById('sat-tbody').innerHTML = SATS.map(s=>`
+        <tr>
+          <td><span class="dot ${DOT[s.status]}"></span>${s.name}</td>
+          <td>${s.id}</td><td>${s.op}</td><td>${s.alt}</td><td>${s.inc}</td>
+          <td>${s.score}</td>
+          <td><span class="badge ${BCLS[s.status]}">${BTXT[s.status]}</span></td>
+          <td style="color:var(--faint);font-size:0.56rem;">${s.note}</td>
+        </tr>`).join('');
+      const c = { ok:0, watch:0, urgent:0, hazard:0 };
+      SATS.forEach(s=>c[s.status]++);
+      document.getElementById('s-total').textContent  = SATS.length;
+      document.getElementById('s-ok').textContent     = c.ok;
+      document.getElementById('s-watch').textContent  = c.watch;
+      document.getElementById('s-urgent').textContent = c.urgent;
+      document.getElementById('s-hazard').textContent = c.hazard;
+    }
+
+    async function loadUsers() {
+      const tbody = document.getElementById('user-tbody');
+      const err   = document.getElementById('user-err');
+      const { data, error } = await sb.from('profiles').select('id,email,role,created_at').order('created_at');
+      if (error) {
+        tbody.innerHTML = `<tr><td colspan="4" style="color:var(--faint);">Unable to load users — check RLS policy.</td></tr>`;
+        err.style.display = 'block';
+        err.textContent = 'RLS policy may be missing. Run: CREATE POLICY "Admins read all profiles" ON public.profiles FOR SELECT USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = \'admin\'));';
+        document.getElementById('s-users').textContent = '—';
+        return;
+      }
+      document.getElementById('s-users').textContent = data.length;
+      tbody.innerHTML = data.map(u=>`
+        <tr id="row-${u.id}">
+          <td>${u.email||'—'}</td>
+          <td>
+            <select class="role-sel" id="sel-${u.id}">
+              <option value="user"    ${u.role==='user'   ?'selected':''}>User</option>
+              <option value="admin"   ${u.role==='admin'  ?'selected':''}>Admin</option>
+              <option value="revoked" ${u.role==='revoked'?'selected':''}>Revoked</option>
+            </select>
+          </td>
+          <td>${u.created_at?new Date(u.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—'}</td>
+          <td><button class="btn-xs" onclick="saveRole('${u.id}')">Save</button></td>
+        </tr>`).join('');
+    }
+
+    async function saveRole(uid) {
+      const sel = document.getElementById('sel-'+uid);
+      const newRole = sel.value;
+      const { error } = await sb.from('profiles').update({ role: newRole }).eq('id', uid);
+      if (error) { alert('Update failed: '+error.message); return; }
+      sel.style.borderColor = 'var(--status-ok)';
+      setTimeout(()=>sel.style.borderColor='', 1800);
+    }
+
+    async function doSignOut() {
+      await sb.auth.signOut();
+      window.location.href = '../login.html';
+    }
+
+    window.addEventListener('load', async () => {
+      const { data:{ session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = '../login.html'; return; }
+      const { data: pr } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
+      if (!pr || pr.role !== 'admin') { window.location.href = 'index.html'; return; }
+      document.getElementById('user-label').textContent = session.user.email;
+      document.getElementById('ts').textContent = new Date().toISOString().slice(0,16).replace('T',' ')+' UTC';
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      buildSatTable();
+      await loadUsers();
+    });
+  </script>
+</body>
+</html>
