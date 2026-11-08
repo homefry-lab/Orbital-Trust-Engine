@@ -260,8 +260,10 @@
     window.addEventListener('load', async () => {
       const { data:{ session } } = await sb.auth.getSession();
       if (!session) { window.location.href = '../login.html'; return; }
-      const { data: pr } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
-      if (!pr || pr.role !== 'admin') { window.location.href = 'index.html'; return; }
+      // Read role from JWT claims (set by custom_access_token_hook)
+      const role = session.user.app_metadata?.user_role
+                || session.user.user_metadata?.user_role;
+      if (role !== 'admin') { window.location.href = 'index.html'; return; }
       document.getElementById('user-label').textContent = session.user.email;
       document.getElementById('ts').textContent = new Date().toISOString().slice(0,16).replace('T',' ')+' UTC';
       document.getElementById('loading').style.display = 'none';
